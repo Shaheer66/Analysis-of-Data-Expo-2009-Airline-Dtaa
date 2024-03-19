@@ -1,0 +1,198 @@
+---
+title: "Question 5"
+author: "Shaheer"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Importing the libraries
+```{r}
+library(data.table)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(caTools)
+install.packages('corrgram')
+library(corrgram)
+```
+Opening the datasets
+```{r}
+d_26<- fread("C:/Users/haysh/Downloads/2006.csv")
+d_27<- fread("C:/Users/haysh/Downloads/2007.csv")
+colnames(d_26)
+```
+
+#Combining the two datasets
+```{r}
+flight_ <- rbind.data.frame(d_26,d_27)
+flight_delay <-data.frame(flight_)
+head(flight_delay,10)
+```
+#Transforming the ArrivalTime column into hour format as a new column called 'ArrivalTime'
+
+```{r}
+flight_delay$ArrTime <- flight_delay$ArrTime/100
+head(flight_delay,10)
+df <- data.frame(flight_delay)
+```
+
+#Dropping the null values
+
+```{r}
+df <- na.omit(df)
+head(df,10)
+```
+#As there are Arrival Times greater than 24.00 which is of no value, filtering only the rows which the Arrival Time is less than 24.00
+
+```{r}
+df <- df %>% filter(ArrTime <= 24.00)
+options(max.print=999999999)
+head(df,10)
+```
+#Creating a new column which has transformed the hours of day into four time slot bins.
+
+```{r}
+breaks <- c(0.00,6.00,12.00,18.00,23.59)
+tags <- c("0","1","2","3")
+# bucketing values into bins
+group_tags <- cut(df$ArrTime, 
+                  breaks=breaks, 
+                  include.lowest=TRUE, 
+                  right=FALSE, 
+                  labels=tags)
+# inspect bins
+summary(group_tags)
+```
+#Replacing the new column with 'ArrTime' column
+
+```{r}
+df['ArrTime']<-group_tags
+head(df,10)
+summary(df)
+```
+
+#Taking a sample of 65000
+```{r}
+df <- df[sample(nrow(df), 65000),]
+summary(df)
+class(df)
+
+```
+#Making categorical features factors 
+
+
+```{r}
+df$CRSDepTime  <- as.factor(df$CRSDepTime)
+df$Month  <- as.factor(df$Month)
+df$DayOfWeek  <- as.factor(df$DayOfWeek)
+df$UniqueCarrier  <- as.factor(df$UniqueCarrier)
+df$Origin  <- as.factor(df$Origin)
+df$Dest  <- as.factor(df$Dest)
+df$CancellationCode  <- as.factor(df$CancellationCode)
+df$Dest  <- as.factor(df$Dest)
+head(df,10)
+```
+
+#PLotting the correlation matrix
+```{r}
+corrgram(df,lower.panel = panel.shade,upper.panel=panel.cor)
+```
+#Selecting the required variables for the model after checking the correlation matrix
+```{r}
+df<-df %>% select('ArrDelay','CRSDepTime','Month', 'ArrTime','DayofMonth', 'DayOfWeek', 'CarrierDelay','WeatherDelay','NASDelay','LateAircraftDelay')
+head(df,10)
+```
+
+
+```{r}
+#Encoding the target value
+df <- df %>%
+mutate(delayed = if_else(ArrDelay > 0, 1 , 0))
+```
+
+#Plotting boxplots in order to understand the distributions of the variables
+```{r}
+boxplot(y=df$DepDelay,df$DepDelay,main ="DepDelay")
+
+boxplot(y=df$DepDelay,df$DepDelay,main ="DepDelay")
+boxplot(y=df$CRSArrTime,df$CRSArrTime,main ="CRSArrTime")
+boxplot(y=df$CRSElapsedTime,df$CRSElapsedTime,main ="CRSElapsedTime")
+boxplot(y=df$CRSElapsedTime,df$CRSElapsedTime,main ="CRSElapsedTime")
+
+```
+#Splitting the dataset as trainset and test set
+```{r}
+`df$delayed <- as.factor(df$delayed)
+testsplit<- sample.split(Y=df$ArrDelay,SplitRatio<-0.7)
+trainData <- subset(x=df,testsplit==TRUE)
+head(trainData)
+testData <- subset(x=df,testsplit==FALSE)
+```
+
+#Fitting the model
+```{r}
+model<-lm(ArrDelay~.,data=trainData)
+
+summary(model)
+```
+
+#Plotting the residuals in order to check whether its been normally distributed or not
+```{r}
+res<- as.data.frame(residuals(model))
+ggplot(res, aes(residuals(model)))+
+  geom_histogram(fill='blue')
+pred<-predict(model,testData)
+modelvals<- cbind(testData$Weight,pred)
+colnames(modelvals)
+```
+#Calculating the R squared value
+```{r}
+library(caret)
+
+r2 <- R2(y_pred, y_test)
+```
+
+
+
+#Randomforrest regressor
+```{r}
+library(randomForest)
+
+Rf <- randomForest(X_train, y_train, ntree = 15, mtry = ncol(X_train),
+                   replace = FALSE, sampsize = nrow(X_train), nodesize = 1,
+                   importance = TRUE)
+
+Rf_train_pred <- predict(Rf, X_train)
+Rf_test_pred <- predict(Rf, X_test)
+```
+
+#Evaluating the model by introducing a function
+```{r}
+
+def evaluation(model):
+    modelA.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    print("R squared: ", round(r2,3))
+    print("RMSE: {}".format(np.sqrt(metrics.mean_absolute_error(y_test, y_pred))))
+```
+    
+```{r}
+    modelA = Rf
+evaluation(Rf)
+```
+
+#DecisionTreeRegressor
+```{r}
+from sklearn.tree import DecisionTreeRegressor
+dtm = DecisionTreeRegressor(max_depth=4,
+                           min_samples_split=50)
+```
+
+```{r}
+modelA = dtm
+evaluation(dtm)
+```
