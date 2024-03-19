@@ -1,0 +1,165 @@
+---
+title: "QUESTION 2"
+author: "Shaheer Ahmad"
+date: "2024-03-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#Q2. Do older planes suffer more delays?
+
+#Importing the required libraries
+
+```{r}
+library(data.table)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+```
+
+#Opening the datasets and combining them
+
+```{r}
+d_27<- fread("C:/Users/haysh/Downloads/2007.csv")
+d_26<- fread("C:/Users/haysh/Downloads/2006.csv")
+flight_ <- rbind.data.frame(d_26,d_27)
+```
+#converting as a dataframe
+
+```{r}
+delay_ <- data.frame(flight_)
+head(delay_,10)
+```
+#Filtering reqiuired columns of the dataset
+
+```{r}
+delay_ %>% select("ArrDelay","TailNum","Year")
+head(delay_,10)
+```
+
+#Opening the Planes Dataset
+
+```{r}
+planes <-fread("C:/Users/haysh/Downloads/plane-data_1.csv",header = TRUE,fill=TRUE)
+```
+#Converting as a dataframe
+
+```{r}
+planes<- data.frame(planes)
+head(planes,10)
+```
+#Filtering the required Columns 
+
+```{r}
+planes <- planes[ , c("tailnum","year")]
+options(max.print=9999999)
+head(planes,10)
+```
+#Filtering inorder to obtain records of delays
+
+```{r}
+delay_ <- delay_ %>% filter(ArrDelay > 0)
+```
+
+#Dropping Null Values
+
+```{r}
+delay_ %>% drop_na()
+planes %>% drop_na()
+```
+#Making a column column name inorder to merge the two datasets
+   
+```{r}
+colnames(delay_)[11] <- "tailnum"
+head(delay_,10)
+head(planes,10)
+colnames(planes) <- c('tailnum')
+colnames(planes)[1]  <- "tailnum" 
+```
+#Merging the two data sets using the common column
+
+```{r}
+options(max.print=9999999)
+merged <- merge(delay_,planes, by ="tailnum")
+head( merged,10)
+```
+#Dropping null values and doing necessary data wrangling 
+```{r}
+merged %>% drop_na()
+head(merged,10)
+colnames(merged)[30]  <- "ManufacturedYear" 
+head(merged,10)
+options(max.print=9999999)
+merged %>% drop_na()
+sumary(merged,10)
+```
+
+#Converting year and manufactured year variables as integers, and calculating the age of each plane
+```{r}
+merged$Year<-as.integer(merged$Year)
+merged$ManufacturedYear<-as.integer(merged$ManufacturedYear)
+Age <- merged$Year - merged$ManufacturedYear
+merged$Age <- Age
+head(merged,10)
+options(max.print=9999999)
+merged %>% drop_na()
+head(merged,10)
+```
+
+#Categorizing age column values into bins 
+```{r}
+breaks <- c(0,10,20,30,40,51)
+tags <- c('10 years<=','20 years<=','30 years<=','40 years<=','51 years<=')
+# bucketing values into bins
+group_tags <- cut(merged$Age, 
+                  breaks=breaks, 
+                  include.lowest=TRUE, 
+                  right=FALSE, 
+                  labels=tags)
+```
+
+```{r}
+# inspect bins
+summary(group_tags)
+merged['Age']<-group_tags
+summary(merged)
+merged %>% drop_na()
+head(merged,10)
+```
+                  
+#Calculating the group mean arrival delay values of each group
+```{r}
+merged_by_age <- merged %>% group_by (Age) %>% summarise(Arr_delay = mean(ArrDelay),.groups = 'drop')
+merged_by_age =data.frame(merged_by_age)
+merged_by_age %>% drop_na()
+summary(merged_by_age)
+
+```
+     
+#Plotting the findings             
+```{r}
+#Plotting the findings
+barplot(merged_by_age$Arr_delay,names.arg =merged_by_age$Age ) 
+
+
+```
+#Calculating the group median arrival delay values of each group
+```{r}
+merged_by_age1 <- merged %>% group_by (Age) %>% summarise(Arr_delay = median(ArrDelay),.groups = 'drop')
+merged_by_age1 =data.frame(merged_by_age)
+merged_by_age1 %>% drop_na()
+summary(merged_by_age1)
+
+```
+#Plotting the findings
+
+```{r}
+barplot(merged_by_age1$Arr_delay,names.arg =merged_by_age$Age ) 
+a<-merged$ArrDelay
+b<-merged$ManufacturedYear
+cor(a,b)
+```
+                  
