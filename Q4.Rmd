@@ -1,0 +1,111 @@
+---
+title: "QUESTION 4"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Q4
+
+#Importing the required libraries
+```{r}
+library(data.table)#Importing the libraries
+library(data.table)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+```
+#Opening the datasets and merging them
+
+```{r}
+```
+
+
+```{r}
+d_26<- fread("C:/Users/haysh/Downloads/2006.csv")
+d_27<- fread("C:/Users/haysh/Downloads/2007.csv")
+flight_ <- rbind.data.frame(d_26,d_27)
+combined <-data.frame(flight_)
+head(combined,10)
+```
+
+
+```{r}
+```
+#Converting to datetime
+#extracting the minutes and hours
+
+```{r}
+Min1 <-  function(x){
+  substr(x, nchar(x)-1, nchar(x))
+}
+Min1 <- as.integer(Min1(combined$CRSDepTime))
+
+Hr <- floor(combined$CRSDepTime / 100)
+head(combined,10)
+```
+#converting to datetime
+
+```{r}
+combined <- mutate(combined,CRSDepTime = make_datetime(Year, Month,DayofMonth,Hr, Min1)) 
+head(combined,10)    
+```
+#Sorting the dataset according to CRSDeptime
+
+```{r}
+combined[order(combined$TailNum,combined$CRSDepTime, decreasing = TRUE), ]
+head(combined,10)
+
+```
+#Defining the new variable which is the sum of both Arrival and Departure delays
+```{r}
+combined$TotalCDelay <- combined$DepDelay + combined$ArrDelay
+head(combined,10)
+```
+#Lagging the current delay with one time period inorder to find previous delays
+```{r}
+combined <- combined %>%
+  mutate(Delay1 = lead(ArrDelay))
+head(combined,10)
+head(combined,10)
+
+```
+#Dropping the null values
+```{r}
+combined <- na.omit(combined)
+```
+#plotting the cascading delays
+```{r}
+ggplot(data = combined, aes(x = combined$TotalCDelay, y = combined$Delay1)) +
+  geom_point(color = "#83D6D1") +
+  geom_smooth(se = FALSE, color = "#2B229A") +
+  ggtitle("Cascading delays") +
+  labs(x= "TotalCurrentDelay", y = "Delay1") +
+  theme_classic()
+```
+#CrossTabulation
+```{r}
+combined$TotalCDelay1 <- ifelse(combined$TotalCDelay>0, 1,0)
+combined$Delay11 <- ifelse(combined$Delay1>0, 1, 0)
+
+crosstab <- table(combined$TotalCDelay1, combined$Delay11)
+
+
+```
+#Plotting a scatterplot using LateAircraftDelay and ArrDelay variables as x axis and y axis
+
+```{r}
+ggplot(data = combined, aes(x = LateAircraftDelay, y =ArrDelay)) +
+  geom_point(color = "#83D6D1") +
+  geom_smooth(se = FALSE, color = "#2B229A") +
+  ggtitle("Cascading delays") +
+  labs(x= "TotalCDelay", y = "Delay1") +
+  theme_classic()
+```
+  
+
+```{r}
+```
