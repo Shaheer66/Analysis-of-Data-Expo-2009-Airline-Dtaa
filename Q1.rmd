@@ -1,0 +1,215 @@
+---
+title: "Question 1"
+author: "Shaheer Ahmad"
+date: "2024-10-02"
+output: html_document
+
+
+#Q1. When is the best time of day, day of the week, and time of year to fly to minimise delays?
+
+#Importing the required libraries
+```{r}
+library(data.table)#Importing the libraries
+library(data.table)
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+```
+
+#Opening the datasets 
+```{r}
+d_26<- fread("C:/Users/haysh/Downloads/2006.csv")
+d_27<- fread("C:/Users/haysh/Downloads/2007.csv")
+```{r}
+```
+#Finding Column Names
+```{r}
+colnames(d_26)
+```
+
+#Getting an understanding of the variables of the 
+```{r}
+head(d_27,10)
+```
+
+#Filtering the required columns to answer the question
+```{r}
+d_26 %>% select("Year","Month","DayofMonth","DayOfWeek","DepTime","DepDelay")
+d_27 %>% select("Year","Month","DayofMonth","DayOfWeek","DepTime","DepDelay")`
+
+```
+#Combining the two datasets,transforming into data frame and getting the first 10 rows
+
+```{r}
+flight_ <- rbind.data.frame(d_26,d_27)
+flight_delay <-data.frame(flight_)
+head(flight_delay,10)
+```
+#Transforming the ArrivalTime column into hour format as a new column called 'ArrivalTime'
+```{r}
+flight_delay$ArrTime <- flight_delay$ArrTime/100
+head(flight_delay,10)
+df <- data.frame(flight_delay)
+```
+#Dropping the null values
+
+```{r}
+df <- na.omit(df)
+```
+#As there are Arrival Times greater than 24.00 which is of no value, filtering only the rows which the Arrival Time is less than 24.00
+```{r}
+`df <- df %>% filter(ArrTime <= 24.00)
+options(max.print=999999999)``{r}
+```
+#Best time of the day?
+#Filtering Arrival Time and ArrDelay columns
+```{r}
+df1 <- df[ , c("ArrTime","ArrDelay")] 
+head(df1,10)
+```
+#Creating a new column which has transformed the hours of day into four time slot bins.
+
+```{r}
+breaks <- c(0.00,6.00,12.00,18.00,23.59)
+tags <- c("Early Morning","Morning","Afternoon","Evening")
+```
+# bucketing values into bins
+
+```{r}
+group_tags <- cut(df$ArrTime, 
+                  breaks=breaks, 
+                  include.lowest=TRUE, 
+                  right=FALSE, 
+                  labels=tags)
+```
+# inspect bins
+
+```{r}
+summary(group_tags)
+```
+#Replacing the new column with 'ArrTime' column
+
+```{r}
+df['ArrTime']<-group_tags
+summary(df)
+```
+
+#Grouping the Arrival delays by Timezone bins and obtaining the mean
+```{r}
+delays_byTimeZone <- df %>% group_by (ArrTime) %>% summarise(Arr_delay = mean(ArrDelay),.groups = 'drop')
+delays_byTimeZone =data.frame(delays_byTimeZone)
+delays_byTimeZone %>% drop_na()
+is.null(delays_byTimeZone) 
+```
+dropping the null values and converting getting the summary
+```{r}
+delays_byTimeZone %>% drop_na()
+is.null(delays_byTimeZone) 
+summary()
+```
+#Plotting the findings
+
+```{r}
+barplot(delays_byhour1$Arr_delay,names.arg =delays_byhour1$ArrTime )
+```
+
+#Finding the median values and getting the summary
+```{r}
+delays_byTimeZone1 <- df %>% group_by (ArrTime) %>% summarise(Arr_delay = median(ArrDelay),.groups = 'drop')
+delays_byTimeZone1 =data.frame(delays_byTimeZone1)
+delays_byTimeZone1 %>% drop_na()
+is.null(delays_byTimeZone1)
+summary() 
+```
+#BoxPlot
+```{r}
+boxplot(df$ArrDelay)
+```{r}
+```
+#Plotting the findings
+
+```{r}
+barplot(delays_byTimeZone1$Arr_delay,names.arg =delays_byTimeZone1$ArrTime )
+```
+
+#Best time of the week?
+#Filtering Arrival Time and ArrDelay columns
+
+```{r}
+df2 <- df[ , c("DayOfWeek","ArrDelay")] 
+options(max.print=9999999)
+df2
+```
+#Grouping the Arrival delays by Day of Week and obtaining the mean
+
+```{r}
+delays_byday <- df %>% group_by (DayOfWeek) %>% summarise(Arr_delay = mean(ArrDelay),.groups = 'drop')
+delays_byday =data.frame(delays_byday)
+is.null(delays_byday$ArrTime)
+is.null(delays_byday)
+delays_byday %>% drop_na()
+summary()
+```
+#Plotting the findings
+```{r}
+barplot(delays_byday$Arr_delay,names.arg =delays_byday$DayofWeek,xlab='Day of Week',ylab=
+          'Mean delay')
+```
+
+##Filtering Month and ArrDelay columns
+```{r}
+delays_byday %>%
+  ggplot(aes(x=delays_byday$DayofWeek,y=delays_byday$ArrDelay)) +
+  geom_point(size = 3, colour = "black") + 
+  geom_segment( aes(x= delays_byday$DayofWeek, xend= delays_byday$DayofWeek, y= 0, yend=delays_byday$ArrDelay))+
+  labs(y= "Mean Arrival Delay", x="=Day")
+
+```
+
+#Grouping the Arrival delays by Day of Week and obtaining the median
+
+```{r}
+delays_byday1 <- df %>% group_by (DayOfWeek) %>% summarise(Arr_delay = median(ArrDelay),.groups = 'drop')
+```
+#Plotting the findings
+
+```{r}
+barplot(delays_byday1$Arr_delay,names.arg =delays_byday1$DayofWeek,xlab='Day of Week',ylab='Median delay')
+```
+#Best time of the year?
+
+```{r}
+df3 <- df[ , c("Month","ArrDelay")] 
+options(max.print=999999999)
+```
+#Grouping the Arrival delays by Month and obtaining the mean
+
+```{r}
+delays_by_day_of_year <- df %>% group_by (Month) %>% summarise(Arr_delay = mean(ArrDelay),.groups = 'drop')
+delays_by_day_of_year=data.frame(delays_by_day_of_year)
+delays_by_day_of_year %>% drop_na()
+```
+#Plotting the findings
+
+```{r}
+plot(delays_by_day_of_year$Arr_delay,names.arg =delays_by_day_of_year$Month,xlab='Month',ylab=
+          'Mean delay')
+```
+#Grouping the Arrival delays by Month and obtaining the median
+
+```{r}
+delays_by_day_of_year1 <- df %>% group_by (Month) %>% summarise(Arr_delay = median(ArrDelay),.groups = 'drop')
+delays_by_day_of_year1=data.frame(delays_by_day_of_year1)
+delays_by_day_of_year1 %>% drop_na()
+```
+#Plotting the findings
+
+```{r}
+ggplot(delays_by_day_of_year, aes(x=delays_by_day_of_year$Month, y=delays_by_day_of_year$Arr_delay)) +
+  geom_line()
+
+ggplot(delays_by_day_of_year, aes(x=delays_by_day_of_year1$Month, y=delays_by_day_of_year1$Arr_delay)) +
+  geom_line()
+```
+  
