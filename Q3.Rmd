@@ -1,0 +1,189 @@
+---
+title: "QUESTION 3"
+author: "Shaheer Ahmad"
+
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Importing the libraries
+```{r}
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+
+```
+
+#Opening the Data Sets
+
+```{r}
+D_27<- fread("C:/Users/haysh/Downloads/2007.csv")
+D_26<- fread("C:/Users/haysh/Downloads/2006.csv")
+head(D_26,10)
+```
+#Filtering the necessary columns
+
+```{r}
+d_26<-D_26 %>% select('Year','Month','FlightNum','Origin')
+d_27<-D_27 %>% select('Year','Month','FlightNum','Origin')
+head(d_26,10)
+```
+#Removing Null Values
+
+```{r}
+d_26 %>% drop_na()
+d_27 %>% drop_na()
+head(d_26,10)
+head(d_27,10)
+```
+#Categorizing the 12 months of the year into quarters
+
+```{r}
+breaks <- c(1,3,6,9,12)
+tags <- c('Quarter1','Quarter2','Quarter3','Quarter4')
+# bucketing values into bins
+group_tags1 <- cut(d_26$Month,
+                  breaks=breaks, 
+                  include.lowest=FALSE, 
+                  right=FALSE, 
+                  labels=tags)
+summary(group_tags1)
+
+#Replacing the values of 'Month' column with categorized values
+d_26$Month<-group_tags1
+head(d_26,10)
+breaks <- c(1,3,6,9,12)
+# specify interval/bin labels
+tags <- c('Quarter1','Quarter2','Quarter3','Quarter4')
+# bucketing values into bins
+group_tags2 <- cut(d_27$Month,
+                  breaks=breaks, 
+                  include.lowest=FALSE, 
+                  right=FALSE, 
+                  labels=tags)
+d_27$Month<-group_tags2
+d_27 %>% drop_na()
+d_26 %>% drop_na()
+```
+#Grouping and taking the counts using Flight number variable
+```{r}
+a<-count(d_26,Month,Year)
+a =data.frame(a)
+head(a,10)
+a <-a[-c(9,10),]
+a1<-a[-5,]
+a1 %>% drop_na()
+a1
+b<-count(d_27,Month,Year)
+b =data.frame(b)
+b <-b[-c(9,10),]
+b1<-b[-5,]
+b1 %>% drop_na()
+b1
+```
+
+```{r}
+flight_ <- rbind.data.frame(a1,b1)
+head(flight_,10)
+options(max.print=9999999)
+barplot(flight_$n, main="No of Flights in each Quarter",
+        xlab="=X axis - Quarter1-2006,Quarter1-2007,Quarter2-2006,Quarter2-2006,Quarter2-2007,Quarter3-2006,Quarter3-2007,Quarter4-2006,Quarter4-2007")
+
+```
+#Location wise Analysis
+#create a dataframe filtered for the top 20 Airports, grouped by Month and Year
+
+  
+
+```{r}
+location <- combined %>%
+  group_by(Origin) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  head(56) %>%
+  pull(Origin)
+```
+
+
+```{r}
+ location10 <- combined %>%
+  filter(Origin %in% location)
+```
+
+#Finding the number of flights conceded in each airport in each quarter of year 2006 and 2007
+```{r}
+location10 <- location10 %>%
+  group_by(Origin, Year, Month) %>%
+  summarise(Count = n()) %>%
+  ungroup()
+```
+#Sorting values according to count order for each year
+```{r}
+location10 %>%
+  arrange(Count) %>%
+  head(80)
+```
+
+```{r}
+location11 <- combined %>%
+  filter(Origin %in% location)
+```
+
+
+```{r}
+location11 <- location11 %>%
+  group_by(Origin) %>%
+  summarise(Count = n()) %>%
+  ungroup()
+```
+
+#Finding the values of 80 airports which have the most number of flights concededs
+```{r}
+location11 %>%
+  arrange(Count) %>%
+  head(80)
+```
+
+```{r}
+top_airports <- combined %>%
+  count(Origin) %>%
+  arrange(desc(n)) %>%
+  head(20) %>%
+  pull(Origin)
+```
+
+#filter only for the top 10 airports
+```{r}
+top_10 <- combined %>%
+  filter(Origin %in% top_states)
+```
+
+```{r}
+top_10 <- top_10 %>%
+  group_by(Origin, Year, Month) %>%
+  summarise(Count = n()) %>%
+  ungroup()
+
+```
+#Plotting the final result
+```{r}
+
+side <- ggplot(top_10, aes(x = Origin, y = Count, fill = as.factor(Year))) +
+  geom_bar(stat = "identity", position = "dodge") +
+ 
+  labs(x = "State", y = "Number of Flights", title = "Number of Flights over time by States") +
+  theme(plot.title = element_text(size = 18),
+        axis.text.x = element_text(size = 13),
+        axis.text.y = element_text(size = 13),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 12),
+        legend.position = "bottom") +
+  guides(fill = guide_legend(nrow = 1, title.position = "top"))
+
+```
+
+
